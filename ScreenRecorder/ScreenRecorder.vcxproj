@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{f195cac0-bdba-4d88-b849-a625c34f7bcf}</ProjectGuid>
+    <RootNamespace>ScreenRecorder</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <WebView2UseWinRT>false</WebView2UseWinRT>
+    <WebView2EnableCsWinRTProjection>false</WebView2EnableCsWinRTProjection>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>..\ScreenRecorder;..\ScreenRecorder\CaptureEngine\Include;..\ScreenRecorder\VideoEncoder\Include;..\ScreenRecorder\UI\Include;..\ScreenRecorder\ThirdPartyDependencies\Include;..\ScreenRecorder\Resource\;..\ScreenRecorder\RecordingHandler\Include;..\ScreenRecorder\Utils;..\ScreenRecorder\UI;$(WXWIN)\include\msvc;$(WXWIN)\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Mfplat.lib;Mfreadwrite.lib;mf.lib;ole32.lib;mfuuid.lib;D3D11.lib;DXGI.lib;Comctl32.lib;Rpcrt4.lib;wxbase32ud.lib;wxbase32ud_net.lib;wxbase32ud_xml.lib;wxmsw32ud_adv.lib;wxmsw32ud_aui.lib;wxmsw32ud_core.lib;wxmsw32ud_gl.lib;wxmsw32ud_html.lib;wxmsw32ud_media.lib;wxmsw32ud_propgrid.lib;wxmsw32ud_qa.lib;wxmsw32ud_ribbon.lib;wxmsw32ud_richtext.lib;wxmsw32ud_stc.lib;wxmsw32ud_xrc.lib;wxmsw32ud_webview.lib;wxscintillad.lib;wxpngd.lib;wxzlibd.lib;wxjpegd.lib;wxexpatd.lib;wxtiffd.lib;%(AdditionalDependencies);Shcore.lib</AdditionalDependencies>
+      <DelayLoadDLLs>Dxgi.dll;D3D11.dll;Mfreadwrite.dll;Mfplat.dll;</DelayLoadDLLs>
+      <AdditionalLibraryDirectories>$(WXWIN)\lib\vc_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\ScreenRecorder;..\ScreenRecorder\CaptureEngine\Include;..\ScreenRecorder\VideoEncoder\Include;..\ScreenRecorder\UI\Include;..\ScreenRecorder\ThirdPartyDependencies\Include;..\ScreenRecorder\Resource\;..\ScreenRecorder\RecordingHandler\Include;..\ScreenRecorder\Utils;..\ScreenRecorder\UI;$(WXWIN)\include\msvc;$(WXWIN)\include</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Mfplat.lib;Mfreadwrite.lib;mf.lib;ole32.lib;mfuuid.lib;D3D11.lib;DXGI.lib;Comctl32.lib;Rpcrt4.lib;wxbase32u.lib;wxbase32u_net.lib;wxbase32u_xml.lib;wxmsw32u_adv.lib;wxmsw32u_aui.lib;wxmsw32u_core.lib;wxmsw32u_gl.lib;wxmsw32u_html.lib;wxmsw32u_media.lib;wxmsw32u_propgrid.lib;wxmsw32u_qa.lib;wxmsw32u_ribbon.lib;wxmsw32u_richtext.lib;wxmsw32u_stc.lib;wxmsw32u_xrc.lib;wxscintilla.lib;wxpng.lib;wxzlib.lib;wxjpeg.lib;wxexpat.lib;wxtiff.lib;%(AdditionalDependencies);Shcore.lib</AdditionalDependencies>
+      <DelayLoadDLLs>Dxgi.dll;D3D11.dll;Mfreadwrite.dll;Mfplat.dll;</DelayLoadDLLs>
+      <AdditionalLibraryDirectories>$(WXWIN)\lib\vc_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>/NODEFAULTLIB:library %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>..\ScreenRecorder;..\ScreenRecorder\CaptureEngine\Include;..\ScreenRecorder\VideoEncoder\Include;..\ScreenRecorder\UI\Include;..\ScreenRecorder\ThirdPartyDependencies\Include;..\ScreenRecorder\Resource\;..\ScreenRecorder\RecordingHandler\Include;..\ScreenRecorder\Utils;..\ScreenRecorder\UI;$(WXWIN)\include\msvc;$(WXWIN)\include</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Mfplat.lib;Mfreadwrite.lib;mf.lib;ole32.lib;mfuuid.lib;D3D11.lib;DXGI.lib;Comctl32.lib;Rpcrt4.lib;wxbase32ud.lib;wxbase32ud_net.lib;wxbase32ud_xml.lib;wxmsw32ud_adv.lib;wxmsw32ud_aui.lib;wxmsw32ud_core.lib;wxmsw32ud_gl.lib;wxmsw32ud_html.lib;wxmsw32ud_media.lib;wxmsw32ud_propgrid.lib;wxmsw32ud_qa.lib;wxmsw32ud_ribbon.lib;wxmsw32ud_richtext.lib;wxmsw32ud_stc.lib;wxmsw32ud_xrc.lib;wxmsw32ud_webview.lib;wxscintillad.lib;wxpngd.lib;wxzlibd.lib;wxjpegd.lib;wxexpatd.lib;wxtiffd.lib;%(AdditionalDependencies);Shcore.lib</AdditionalDependencies>
+      <DelayLoadDLLs>Dxgi.dll;D3D11.dll;Mfreadwrite.dll;Mfplat.dll;</DelayLoadDLLs>
+      <AdditionalLibraryDirectories>$(WXWIN)\lib\vc_x64_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\ScreenRecorder;..\ScreenRecorder\CaptureEngine\Include;..\ScreenRecorder\VideoEncoder\Include;..\ScreenRecorder\UI\Include;..\ScreenRecorder\ThirdPartyDependencies\Include;..\ScreenRecorder\Resource\;..\ScreenRecorder\RecordingHandler\Include;..\ScreenRecorder\Utils;..\ScreenRecorder\UI;$(WXWIN)\include\msvc;$(WXWIN)\include</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>Mfplat.lib;Mfreadwrite.lib;mf.lib;ole32.lib;mfuuid.lib;D3D11.lib;DXGI.lib;Comctl32.lib;Rpcrt4.lib;wxbase32u.lib;wxbase32u_net.lib;wxbase32u_xml.lib;wxmsw32u_adv.lib;wxmsw32u_aui.lib;wxmsw32u_core.lib;wxmsw32u_gl.lib;wxmsw32u_html.lib;wxmsw32u_media.lib;wxmsw32u_propgrid.lib;wxmsw32u_qa.lib;wxmsw32u_ribbon.lib;wxmsw32u_richtext.lib;wxmsw32u_stc.lib;wxmsw32u_xrc.lib;wxscintilla.lib;wxpng.lib;wxzlib.lib;wxjpeg.lib;wxexpat.lib;wxtiff.lib;%(AdditionalDependencies);Shcore.lib</AdditionalDependencies>
+      <DelayLoadDLLs>Dxgi.dll;D3D11.dll;Mfreadwrite.dll;Mfplat.dll;</DelayLoadDLLs>
+      <AdditionalLibraryDirectories>$(WXWIN)\lib\vc_x64_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="CaptureEngine\Source\CaptureEngine.cpp" />
+    <ClCompile Include="RecordingHandler\Source\ScreenRecorder.cpp" />
+    <ClCompile Include="UI\MainWindow.cpp" />
+    <ClCompile Include="VideoEncoder\Source\VideoEncoder.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CaptureEngine\Include\CaptureEngine.h" />
+    <ClInclude Include="RecordingHandler\Include\ScreenRecorder.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="Utils\Utils.h" />
+    <ClInclude Include="VideoEncoder\Include\VideoEncoder.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ScreenRecorder.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets" />
+</Project>
