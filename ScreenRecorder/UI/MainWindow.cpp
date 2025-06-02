@@ -232,7 +232,7 @@ namespace SimpleScreenRecorder
     class Frame : public wxFrame 
     {
     public:
-        Frame() : wxFrame(nullptr, wxID_ANY, "ZA ScreenRecorder", wxDefaultPosition, wxSize(600, 250), wxDEFAULT_FRAME_STYLE & ~wxRESIZE_BORDER & ~wxMAXIMIZE_BOX)
+        Frame() : wxFrame(nullptr, wxID_ANY, "LowLatencyScreenRecorder", wxDefaultPosition, wxSize(600, 250), wxDEFAULT_FRAME_STYLE & ~wxRESIZE_BORDER & ~wxMAXIMIZE_BOX)
         {
             HideWindowFromCapturing();
             InitializeUI();
@@ -251,7 +251,7 @@ namespace SimpleScreenRecorder
         void HideWindowFromCapturing()
         {
             HWND hwnd = reinterpret_cast<HWND>(GetHandle());
-            //SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE);
+            SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE);
         }
 
 		void SetAppIcon()
