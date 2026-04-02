@@ -1,27 +1,13 @@
 #pragma once
 
 #include <d3d11.h>
-#include <dxgi1_2.h>
-#include <dxgi1_3.h> 
 #include <dxgi1_4.h> 
 #include <memory>
 #include <vector>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Graphics.Capture.h>
-#include <winrt/Windows.Graphics.DirectX.Direct3D11.h>
-#include <winrt/Windows.Graphics.DirectX.h>
-#include <winrt/Windows.System.h>
-#include <winrt/Windows.UI.Core.h>
-#include <winrt/Windows.UI.Composition.h>
 #include <wrl/client.h>
-#include <windows.graphics.directx.direct3d11.h>
-#include <windows.media.h>
-#include <windows.graphics.directx.direct3d11.interop.h>
-
-#include <winrt/Windows.Foundation.Collections.h>
 #include <functional>
-#include <winrt/impl/windows.graphics.capture.0.h>
-#include <Windows.Graphics.Capture.Interop.h>
 #include <mutex>
 
 namespace winrt
