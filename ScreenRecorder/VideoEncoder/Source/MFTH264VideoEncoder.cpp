@@ -1,10 +1,15 @@
-#include "VideoEncoder.h"
+#include <mferror.h>
+#include <icodecapi.h>
+#include <Codecapi.h>
+#include <chrono>
+
+#include "MFTH264VideoEncoder.h"
 #include "Utils.h"
 
 
 using namespace Microsoft::WRL;
 
-VideoEncoder::VideoEncoder(int width, int height, int fps, int bitrate,
+MFTH264VideoEncoder::MFTH264VideoEncoder(int width, int height, int fps, int bitrate,
     const std::wstring& output_path, const std::wstring& output_filename)
     :   width_(width),
         height_(height),
@@ -16,45 +21,44 @@ VideoEncoder::VideoEncoder(int width, int height, int fps, int bitrate,
     MFStartup(MF_VERSION);
 }
 
-VideoEncoder::~VideoEncoder() 
+MFTH264VideoEncoder::~MFTH264VideoEncoder() 
 {
     Finalize();
     MFShutdown();
 }
 
-bool VideoEncoder::Initialize(VideoCodec codec_type)
+bool MFTH264VideoEncoder::Initialize(EncoderType codec_type)
 {
     switch (codec_type)
     {
-        case VideoCodec::H264:
+	case EncoderType::MFT_H264:
 			codec_guid_ = MFVideoFormat_H264;
             break;
-        case VideoCodec::H265:
+        case EncoderType::MFT_H265:
 			codec_guid_ = MFVideoFormat_H265;
             break;
-        case VideoCodec::VP8:
+        case EncoderType::VPX_VP8:
             codec_guid_ = MFVideoFormat_VP80;
             break;
-        case VideoCodec::VP9:
+        case EncoderType::VPX_VP9:
 			codec_guid_ = MFVideoFormat_VP90;
             break;
-        case VideoCodec::AV1:
+        case EncoderType::VPX_AV1:
 			codec_guid_ = MFVideoFormat_AV1;
             break;
         default:
             break;
     }
 
-
     return SUCCEEDED(ConfigureSinkWriter());
 }
 
-bool VideoEncoder::ProcessFrame(const std::vector<uint8_t>& image_buffer, int width, int height)
+bool MFTH264VideoEncoder::ProcessFrame(const std::vector<uint8_t>& image_buffer, int width, int height)
 {
 	return SUCCEEDED(EncodeFrame(image_buffer, width, height));
 }
 
-HRESULT VideoEncoder::ConfigureSinkWriter() 
+HRESULT MFTH264VideoEncoder::ConfigureSinkWriter() 
 {
     ComPtr<IMFAttributes> attributes;
     HRESULT hr = MFCreateAttributes(&attributes, 1);
@@ -74,7 +78,7 @@ HRESULT VideoEncoder::ConfigureSinkWriter()
     return sink_writer_->BeginWriting();
 }
 
-HRESULT VideoEncoder::ReConfigureSinkWriter(int width, int height)
+HRESULT MFTH264VideoEncoder::ReConfigureSinkWriter(int width, int height)
 {
     width_ = width;
     height_ = height;
@@ -88,7 +92,7 @@ HRESULT VideoEncoder::ReConfigureSinkWriter(int width, int height)
     return ConfigureSinkWriter();
 }
 
-HRESULT VideoEncoder::ConfigureInputType()
+HRESULT MFTH264VideoEncoder::ConfigureInputType()
 {
     ComPtr<IMFMediaType> input_type;
     HRESULT hr = MFCreateMediaType(&input_type);
@@ -111,7 +115,7 @@ HRESULT VideoEncoder::ConfigureInputType()
     return hr;
 }
 
-HRESULT VideoEncoder::ConfigureOutputType()
+HRESULT MFTH264VideoEncoder::ConfigureOutputType()
 {
     ComPtr<IMFMediaType> output_type;
     HRESULT hr = MFCreateMediaType(&output_type);
@@ -131,7 +135,7 @@ HRESULT VideoEncoder::ConfigureOutputType()
     return hr;
 }
 
-HRESULT VideoEncoder::EncodeFrame(const std::vector<uint8_t>& image_buffer, int width, int height) 
+HRESULT MFTH264VideoEncoder::EncodeFrame(const std::vector<uint8_t>& image_buffer, int width, int height) 
 {
 	if (width != width_ || height != height_)
 	{
@@ -139,13 +143,24 @@ HRESULT VideoEncoder::EncodeFrame(const std::vector<uint8_t>& image_buffer, int 
         height_ = height;
 
 		if (FAILED(ReConfigureSinkWriter(width, height))) return E_FAIL;
+        
+        // Reset timing on reconfiguration
+        is_first_frame_ = true;
 	}
 
     ComPtr<IMFSample> sample;
     ComPtr<IMFMediaBuffer> buffer;
 
-    DWORD buffer_size = static_cast<DWORD>(image_buffer.size());
-    HRESULT hr = MFCreateMemoryBuffer(buffer_size, &buffer);
+    const LONG stride = 4 * width; 
+    const DWORD expected_size = stride * height;
+    const DWORD buffer_size = static_cast<DWORD>(image_buffer.size());
+    
+    if (buffer_size < expected_size)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = MFCreateMemoryBuffer(expected_size, &buffer);
     if (FAILED(hr)) return hr;
 
     BYTE* dest = nullptr;
@@ -155,20 +170,22 @@ HRESULT VideoEncoder::EncodeFrame(const std::vector<uint8_t>& image_buffer, int 
     hr = buffer->Lock(&dest, &max_len, &current_len);
     if (FAILED(hr)) return hr;
 
-    const LONG stride = 4 * width;
-
     hr = MFCopyImage(
-        dest,                      // Destination buffer.
-        stride,                    // Destination stride.
-        image_buffer.data(),       // First row in source image.
-        stride,                    // Source stride.
-        stride,                    // Image width in bytes.
-        height                     // Image height in pixels.
+        dest,                      // Destination buffer
+        stride,                    // Destination stride
+        image_buffer.data(),       // Source buffer (first row)
+        stride,                    // Source stride (should match since we cleaned it)
+        stride,                    // Width in bytes
+        height                     // Height in pixels
     );
 
-    if (FAILED(hr)) return hr;
+    if (FAILED(hr)) 
+    {
+        buffer->Unlock();
+        return hr;
+    }
 
-    buffer->SetCurrentLength(buffer_size);
+    buffer->SetCurrentLength(expected_size);
     buffer->Unlock();
 
     hr = MFCreateSample(&sample);
@@ -176,9 +193,32 @@ HRESULT VideoEncoder::EncodeFrame(const std::vector<uint8_t>& image_buffer, int 
 
     sample->AddBuffer(buffer.Get());
 
-    const uint64_t kHundredNsPerSecond = 10000000;
-    uint64_t duration = kHundredNsPerSecond / fps_;
-    uint64_t timestamp = frame_count_ * duration;
+    auto current_time = std::chrono::high_resolution_clock::now();
+    
+    uint64_t timestamp = 0;
+    uint64_t duration = 0;
+    
+    if (is_first_frame_)
+    {
+        start_time_ = current_time;
+        last_frame_time_ = current_time;
+        is_first_frame_ = false;
+        timestamp = 0;
+        
+        const uint64_t kHundredNsPerSecond = 10000000;
+        duration = kHundredNsPerSecond / fps_;
+    }
+    else
+    {
+        auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(current_time - start_time_);
+        timestamp = elapsed.count() * 10;
+        
+        // Calculate duration from last frame
+        auto frame_duration = std::chrono::duration_cast<std::chrono::microseconds>(current_time - last_frame_time_);
+        duration = frame_duration.count() * 10; // Convert microseconds to 100-nanosecond units
+        
+        last_frame_time_ = current_time;
+    }
 
     sample->SetSampleTime(timestamp);
     sample->SetSampleDuration(duration);
@@ -197,7 +237,7 @@ HRESULT VideoEncoder::EncodeFrame(const std::vector<uint8_t>& image_buffer, int 
     return hr;
 }
 
-HRESULT VideoEncoder::Finalize() 
+HRESULT MFTH264VideoEncoder::Finalize() 
 {
     if (sink_writer_) 
     {

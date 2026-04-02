@@ -14,11 +14,14 @@
 #include <wx/icon.h>
 #include <wx/timer.h>
 #include <wx/dirdlg.h>
+#include <wx/slider.h>
 
 #include <shellscalingapi.h>
 
 #include "ScreenRecorder.h"
-#include "resource.h"
+
+
+#define BITRATE 1000000
 
 using namespace std;
 
@@ -123,12 +126,12 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR h_monitor, HDC hdc_monitor, LPRECT lprc_m
         if (EnumDisplaySettings(monitor_info_ex.szDevice, ENUM_CURRENT_SETTINGS, &dev_mode))
         {
             info.refresh_rate = dev_mode.dmDisplayFrequency;
-
             RECT actual_rect;
             actual_rect.left = 0;
             actual_rect.top = 0;
             actual_rect.right = dev_mode.dmPelsWidth;
             actual_rect.bottom = dev_mode.dmPelsHeight;
+            
 
             info.monitor_rect = actual_rect;
         }
@@ -183,7 +186,20 @@ namespace SimpleScreenRecorder
         static void EnumerateApplications(std::vector<ApplicationInfo>& applications) 
         {
             applications.clear();
-            EnumWindows(EnumWindowsProc, reinterpret_cast<LPARAM>(&applications));
+            std::set<std::wstring> seen_titles;
+            std::vector<ApplicationInfo> temp_applications;
+            
+            EnumWindows(EnumWindowsProc, reinterpret_cast<LPARAM>(&temp_applications));
+            
+            // Filter out duplicates based on window title
+            for (const auto& app : temp_applications)
+            {
+                if (seen_titles.find(app.window_title) == seen_titles.end())
+                {
+                    seen_titles.insert(app.window_title);
+                    applications.push_back(app);
+                }
+            }
         }
 
         static std::vector<wxString> ConvertToWxStringList(const std::vector<MonitorInfo>& monitors) 
@@ -222,7 +238,6 @@ namespace SimpleScreenRecorder
                 application_strings.emplace_back(WStringToWxString(apps.window_title));
             }
 
-			application_strings.erase(std::unique(application_strings.begin(), application_strings.end()), application_strings.end());
 			application_strings.insert(application_strings.begin(), L"Select an application");
 
             return application_strings;
@@ -232,7 +247,7 @@ namespace SimpleScreenRecorder
     class Frame : public wxFrame 
     {
     public:
-        Frame() : wxFrame(nullptr, wxID_ANY, "LowLatencyScreenRecorder", wxDefaultPosition, wxSize(600, 250), wxDEFAULT_FRAME_STYLE & ~wxRESIZE_BORDER & ~wxMAXIMIZE_BOX)
+        Frame() : wxFrame(nullptr, wxID_ANY, "LowLatencyScreenRecorder", wxDefaultPosition, wxSize(600, 300), wxDEFAULT_FRAME_STYLE & ~wxRESIZE_BORDER & ~wxMAXIMIZE_BOX)
         {
             HideWindowFromCapturing();
             InitializeUI();
@@ -305,7 +320,7 @@ namespace SimpleScreenRecorder
 
         void InitializeUI() 
         {
-            SetClientSize(600, 250);
+            SetClientSize(600, 300);
             SetAppIcon();
 
             auto monitor_or_app_label = new wxStaticText(panel.get(), wxID_ANY, "Select Monitor / Application",
@@ -317,16 +332,43 @@ namespace SimpleScreenRecorder
             auto select_folder_label = new wxStaticText(panel.get(), wxID_ANY, "Select Output Folder",
                 wxPoint(360, 10), wxDefaultSize, wxALIGN_RIGHT);
 
+            auto encoder_label = new wxStaticText(panel.get(), wxID_ANY, "Select Encoder",
+                wxPoint(360, 80), wxDefaultSize, wxALIGN_RIGHT);
+
+            auto quality_label = new wxStaticText(panel.get(), wxID_ANY, "Quality",
+                wxPoint(360, 150), wxDefaultSize, wxALIGN_LEFT);
+
             wxFont bold_font(12, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
             wxFont timer_font(13, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
 
             monitor_or_app_label->SetFont(bold_font);
             capture_item_list_label->SetFont(bold_font);
 			select_folder_label->SetFont(bold_font);
+            encoder_label->SetFont(bold_font);
+            quality_label->SetFont(bold_font);
 
 			select_folder_button = std::make_shared<wxButton>(panel.get(), wxID_ANY, "Select Folder", wxPoint(360, 40), wxSize(180, 25), wxALIGN_RIGHT);
             select_folder_button->Bind(wxEVT_BUTTON, &Frame::OnSelectFolderButtonClicked, this);
 
+            encoder_cb = std::make_shared<wxComboBox>(panel.get(), wxID_ANY, wxEmptyString, wxPoint(360, 110), wxSize(180, 25), 0, nullptr, wxCB_READONLY);
+            encoder_cb->Append("VP8");
+            encoder_cb->Append("VP9");
+			encoder_cb->Append("H264");
+            encoder_cb->SetSelection(0); // Default to VP8
+            encoder_cb->Bind(wxEVT_COMBOBOX, &Frame::OnEncoderSelectionChanged, this);
+
+            quality_value_label = std::make_shared<wxStaticText>(panel.get(), wxID_ANY, "5", wxPoint(450, 150), wxSize(30, 25), wxALIGN_CENTER);
+            quality_value_label->SetFont(bold_font);
+            quality_value_label->SetForegroundColour(wxColour(0, 122, 204));
+
+            quality_slider = std::make_shared<wxSlider>(panel.get(), wxID_ANY, 5, 1, 10, wxPoint(395, 180), wxSize(130, 30), wxSL_HORIZONTAL);
+            quality_slider->Bind(wxEVT_SLIDER, &Frame::OnQualitySliderChanged, this);
+
+            auto quality_low_label = new wxStaticText(panel.get(), wxID_ANY, "Low",
+                wxPoint(360, 185), wxDefaultSize, wxALIGN_LEFT);
+
+            auto quality_high_label = new wxStaticText(panel.get(), wxID_ANY, "High",
+                wxPoint(530, 185), wxDefaultSize, wxALIGN_RIGHT);
 
             monitor_or_app_cb->Append("Monitor");
             monitor_or_app_cb->Append("Application");
@@ -335,7 +377,7 @@ namespace SimpleScreenRecorder
 
             capture_item_list->Hide();
 
-            start_stop_button = std::make_shared<wxButton>(panel.get(), wxID_ANY, "Start Recording", wxPoint(10, 180), wxSize(200, 50), wxALIGN_LEFT);
+            start_stop_button = std::make_shared<wxButton>(panel.get(), wxID_ANY, "Start Recording", wxPoint(10, 230), wxSize(200, 50), wxALIGN_LEFT);
             start_stop_button->SetBackgroundColour(wxColour(0, 122, 204));
             start_stop_button->SetForegroundColour(*wxWHITE);
 			start_stop_button->SetFont(bold_font);
@@ -344,7 +386,7 @@ namespace SimpleScreenRecorder
             start_stop_button->Bind(wxEVT_ENTER_WINDOW, &Frame::OnButtonHover, this);
             start_stop_button->Bind(wxEVT_LEAVE_WINDOW, &Frame::OnButtonLeave, this);
 
-            timer_label = std::make_shared<wxStaticText>(panel.get(), wxID_ANY, "Duration : 00:00:00", wxPoint(250, 190), wxSize(200, 50), wxALIGN_CENTER);
+            timer_label = std::make_shared<wxStaticText>(panel.get(), wxID_ANY, "Duration : 00:00:00", wxPoint(250, 240), wxSize(200, 50), wxALIGN_CENTER);
 			timer_label->SetFont(timer_font);
 			timer_label->SetForegroundColour(wxColour(0, 122, 204));
 
@@ -383,6 +425,36 @@ namespace SimpleScreenRecorder
             UpdateCaptureItemList();
         }
 
+        void OnEncoderSelectionChanged(wxCommandEvent& e)
+        {
+            int selected_index = encoder_cb->GetSelection();
+            
+            switch (selected_index)
+            {
+                case 0:
+                    encoder_type = EncoderType::VPX_VP8;
+                    break;
+                case 1:
+                    encoder_type = EncoderType::VPX_VP9;
+                    break;
+                case 2:
+                    encoder_type = EncoderType::MFT_H264;
+                    break;
+                case 3:
+                    encoder_type = EncoderType::VPX_VP9_444;
+                    break;
+				default:
+					encoder_type = EncoderType::VPX_VP8;
+					break;
+            }
+        }
+
+        void OnQualitySliderChanged(wxCommandEvent& e)
+        {
+            int quality = quality_slider->GetValue();
+            quality_value_label->SetLabel(wxString::Format("%d", quality));
+        }
+
 		void OnCaptureItemSelected(wxCommandEvent& e)
 		{
 			int selected_index = capture_item_list->GetSelection();
@@ -390,19 +462,21 @@ namespace SimpleScreenRecorder
 			selected_monitor = nullptr;
 			selected_app = nullptr;
 
-            selected_index--;
-            if (selected_index == wxNOT_FOUND)
+            if (selected_index == wxNOT_FOUND || selected_index == 0)
             {
                 return;
             }
 
             if (monitor_or_app_cb->GetSelection() == 0)
             {
-                selected_monitor = monitors[selected_index].handle;
+                // Adjust index for monitors (For "Select a monitor" at index 0)
+                selected_monitor = monitors[selected_index - 1].handle;
             }
             else
             {
-                selected_app = applications[selected_index].handle;
+                // Adjust index for applications (For "Select an application" at index 0)
+                selected_app = applications[selected_index - 1].handle;
+				std::wstring test = applications[selected_index - 1].window_title;
                 is_monitor_capture = false;
             }
 		}
@@ -417,7 +491,9 @@ namespace SimpleScreenRecorder
 				screen_recorder.StopCapture();
                 StopTimer();
 
-				wxString message = "Recording stopped. File stored in \n" + screen_recorder.GetOutputPath();
+				wxString message = "Recording stopped. File stored in \n";
+				message.append(screen_recorder.GetOutputPath());
+
 				wxMessageBox(message, "Info", wxOK | wxICON_INFORMATION, this);
 				capture_item_list->Enable();
 				monitor_or_app_cb->Enable();
@@ -447,15 +523,18 @@ namespace SimpleScreenRecorder
 				int monitor_number = monitor_info.monitor_index;
 				int width = monitor_info.monitor_rect.right - monitor_info.monitor_rect.left;
 				int height = monitor_info.monitor_rect.bottom - monitor_info.monitor_rect.top;
-				int bitrate = 8000000;
+				int quality = (quality_slider->GetValue() <= 0) ? 5 : quality_slider->GetValue();
+				int bitrate = BITRATE * quality;
                 int fps = monitor_info.refresh_rate;
 
 				screen_recorder.CreateOutputFolder(output_folder_path);
-                bool result = screen_recorder.Initialize(monitor_number, width, height, fps, bitrate);
+                bool result = screen_recorder.Initialize(encoder_type, monitor_number, width, height, fps, bitrate);
 
                 if (!result)
                 {
                     wxMessageBox("Error occured in screen recorder", "Error", wxOK | wxICON_ERROR);
+					is_recording = !is_recording;
+					return;
                 }
 
 				if (is_monitor_capture)
@@ -464,7 +543,6 @@ namespace SimpleScreenRecorder
 				}
 				else
 				{
-
                     SetForegroundWindow(selected_app);
 					screen_recorder.StartWindowCapture(selected_app);
 				}
@@ -489,6 +567,10 @@ namespace SimpleScreenRecorder
             if (!selected_folder.IsEmpty())
             {
                 output_folder_path = selected_folder.wc_str();
+                
+                select_folder_button->SetLabel(wxString::FromUTF8("Selected"));
+                select_folder_button->SetBackgroundColour(wxColour(0, 128, 0)); // Green color
+                select_folder_button->SetForegroundColour(*wxWHITE);
             }
         }
 
@@ -530,8 +612,11 @@ namespace SimpleScreenRecorder
         std::shared_ptr<wxPanel> panel = std::make_shared<wxPanel>(this, wxID_ANY);
         std::shared_ptr<wxComboBox> monitor_or_app_cb = std::make_shared<wxComboBox>(panel.get(), wxID_ANY, wxEmptyString, wxPoint(10, 40), wxSize(300, 170));
         std::shared_ptr<wxComboBox> capture_item_list = std::make_shared<wxComboBox>(panel.get(), wxID_ANY, wxEmptyString, wxPoint(10, 120), wxSize(300, 170));
+        std::shared_ptr<wxComboBox> encoder_cb = nullptr;
         std::shared_ptr<wxButton> start_stop_button = nullptr;
         std::shared_ptr<wxButton> select_folder_button = nullptr;
+        std::shared_ptr<wxSlider> quality_slider = nullptr;
+        std::shared_ptr<wxStaticText> quality_value_label = nullptr;
         bool is_recording = false;
 		bool is_monitor_capture = true;
 
@@ -542,6 +627,7 @@ namespace SimpleScreenRecorder
         std::vector<ApplicationInfo> applications;
 
 		std::wstring output_folder_path;
+		EncoderType encoder_type = EncoderType::VPX_VP8;
         wxTimer timer;
         int elapsed_seconds;
         std::shared_ptr<wxStaticText> timer_label = nullptr;
