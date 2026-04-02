@@ -1,5 +1,6 @@
 ﻿#include "CaptureEngine.h"
-#include <iostream>
+#include <windows.graphics.directx.direct3d11.interop.h>
+#include <Windows.Graphics.Capture.Interop.h>
 
 CaptureEngine::CaptureEngine(int monitor_number, int width, int height)
     : monitor_number_(monitor_number), width_(width), height_(height) 
@@ -249,8 +250,6 @@ bool CaptureEngine::ConvertSurfaceToImageBuffer(winrt::IDirect3DSurface const& s
 			staging_desc.Height = height_;
 		}
 
-        size_t buffer_size = staging_desc.Width * staging_desc.Height * 4;
-
         ComPtr<ID3D11Texture2D> staging_texture;
         HRESULT hr = d3d11_device->CreateTexture2D(&staging_desc, nullptr, staging_texture.GetAddressOf());
 
@@ -293,11 +292,9 @@ bool CaptureEngine::ConvertSurfaceToImageBuffer(winrt::IDirect3DSurface const& s
                 0,                           // Source subresource
                 &srcBox                      // Source box
             );
-
-            buffer_size = width_ * height_ * 4;
         }
 
-        image_buffer.reserve(buffer_size);
+        image_buffer.clear();
 
         D3D11_MAPPED_SUBRESOURCE mapped_resource{};
         hr = d3d_context_->Map(staging_texture.Get(), 0, D3D11_MAP_READ, 0, &mapped_resource);
@@ -305,7 +302,27 @@ bool CaptureEngine::ConvertSurfaceToImageBuffer(winrt::IDirect3DSurface const& s
         if (SUCCEEDED(hr))
         {
             uint8_t* src = static_cast<uint8_t*>(mapped_resource.pData);
-            image_buffer.insert(image_buffer.end(), src, src + buffer_size);
+            UINT row_pitch = mapped_resource.RowPitch;
+            UINT row_size = staging_desc.Width * 4;  
+            
+            if (row_pitch == row_size)
+            {
+                size_t buffer_size = row_size * staging_desc.Height;
+                image_buffer.reserve(buffer_size);
+                image_buffer.insert(image_buffer.end(), src, src + buffer_size);
+            }
+            else
+            {
+                // Padding detected - copy row by row to remove padding
+                size_t buffer_size = row_size * staging_desc.Height;
+                image_buffer.reserve(buffer_size);
+                
+                for (UINT y = 0; y < staging_desc.Height; ++y)
+                {
+                    uint8_t* row_start = src + (y * row_pitch);
+                    image_buffer.insert(image_buffer.end(), row_start, row_start + row_size);
+                }
+            }
 
             output_width = staging_desc.Width;
             output_height = staging_desc.Height;

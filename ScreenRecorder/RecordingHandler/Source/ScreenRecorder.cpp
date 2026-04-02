@@ -2,12 +2,12 @@
 #include <shlobj.h> 
 
 #include "CaptureEngine.h"
-#include "VideoEncoder.h"
+#include "VideoEncoderFactory.h"
 #include "ScreenRecorder.h"
 #include "Utils.h"
 
 
-#define APPLICATION_FOLDER_NAME L"ZAScreenRecorder"
+#define APPLICATION_FOLDER_NAME L"ScreenRecorder"
 
 
 ScreenRecorder::ScreenRecorder()
@@ -46,7 +46,7 @@ ScreenRecorder::~ScreenRecorder()
 	is_initialized_ = false;
 }
 
-bool ScreenRecorder::Initialize(int monitor_number, int width, int height, int fps, int bitrate)
+bool ScreenRecorder::Initialize(EncoderType encoder_type, int monitor_number, int width, int height, int fps, int bitrate)
 {
 	monitor_number_ = monitor_number;
 	width_ = width;
@@ -54,10 +54,11 @@ bool ScreenRecorder::Initialize(int monitor_number, int width, int height, int f
 	bitrate_ = bitrate;
 	fps_ = fps;
 	
-	GetOutputFileName(output_filename_);
+	GetOutputFileName(output_filename_, encoder_type);
 
-	video_encoder_ = std::make_shared<VideoEncoder>(width_, height_, fps_, bitrate_, output_path_, output_filename_);
-	if (!video_encoder_->Initialize(VideoCodec::H264))
+	video_encoder_ = VideoEncoderFactory::CreateVideoEncoder(encoder_type, width_, height_, fps_, bitrate_, output_path_, output_filename_);
+
+	if (!video_encoder_->Initialize(encoder_type))
 	{
 		return false;
 	}
@@ -83,7 +84,7 @@ bool ScreenRecorder::StartMonitorCapture(HMONITOR monitor)
 	}
 
 	capture_engine_->StartCapture();
-	capture_engine_->SetOutputCallback(std::bind(&VideoEncoder::ProcessFrame, video_encoder_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+	capture_engine_->SetOutputCallback(std::bind(&IVideoEncoder::ProcessFrame, video_encoder_.get(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
 	return true;
 }
@@ -99,7 +100,7 @@ bool ScreenRecorder::StartWindowCapture(HWND window_handle)
 	}
 
 	capture_engine_->StartCapture();
-	capture_engine_->SetOutputCallback(std::bind(&VideoEncoder::ProcessFrame, video_encoder_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+	capture_engine_->SetOutputCallback(std::bind(&IVideoEncoder::ProcessFrame, video_encoder_.get(), std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
 	return true;
 
@@ -107,18 +108,22 @@ bool ScreenRecorder::StartWindowCapture(HWND window_handle)
 
 bool ScreenRecorder::StopCapture()
 {
+	is_initialized_ = false;
+
 	if (!capture_engine_) return false;
 	if (!video_encoder_) return false;
+
+	if (capture_engine_)
+	{
+		capture_engine_->StopCapture();
+		capture_engine_->SetOutputCallback(nullptr);
+	}
 
 	if (video_encoder_)
 	{
 		video_encoder_->Finalize();
 	}
 
-	if (capture_engine_)
-	{
-		capture_engine_->StopCapture();
-	}
 
 	return true;
 }
@@ -157,14 +162,29 @@ bool ScreenRecorder::CreateAndGetApplicationDirectoryPath(const std::wstring& fo
 	return false;
 }
 
-bool ScreenRecorder::GetOutputFileName(std::wstring& file_name)
+bool ScreenRecorder::GetOutputFileName(std::wstring& file_name, EncoderType encoder_type)
 {
 	file_name.clear();
 	file_name.append(RecorderUtils::GetCurrentDateTime());
-	file_name.append(L".mp4");
+
+	if (encoder_type == EncoderType::MFT_H264 || encoder_type == EncoderType::MFT_H265)
+	{
+		file_name.append(L".mp4");
+	}
+	else if (encoder_type == EncoderType::VPX_VP8 || encoder_type == EncoderType::VPX_VP9 || encoder_type == EncoderType::VPX_AV1)
+	{
+		file_name.append(L".webm");
+	}
+	else
+	{
+		return false;
+	}
 
 	return file_name.size() > 0;
 }
+
+
+
 
 
 

@@ -2,7 +2,7 @@
 #include <memory>
 #include <string>
 #include "CaptureEngine.h"
-#include "VideoEncoder.h"
+#include "IVideoEncoder.h"
 
 
 struct RecordingParams
@@ -19,7 +19,7 @@ public:
 	ScreenRecorder();
 	~ScreenRecorder();
 	
-	bool Initialize(int monitor_number, int width, int height, int fps, int bitrate);
+	bool Initialize(EncoderType encoder_type, int monitor_number, int width, int height, int fps, int bitrate);
 
 	bool StartMonitorCapture(HMONITOR monitor);
 	bool StartWindowCapture(HWND window_handle);
@@ -30,11 +30,11 @@ public:
 
 private:
 	bool CreateAndGetApplicationDirectoryPath(const std::wstring& folder_name, const std::wstring folder_path,  std::wstring& output_full_path);
-	bool GetOutputFileName(std::wstring& file_name);
+	bool GetOutputFileName(std::wstring& file_name, EncoderType encoder_type);
 
 private:
 	std::shared_ptr<CaptureEngine> capture_engine_;
-	std::shared_ptr<VideoEncoder> video_encoder_;
+	std::shared_ptr<IVideoEncoder> video_encoder_;
 	int width_;
 	int height_;
 	std::wstring output_path_;
